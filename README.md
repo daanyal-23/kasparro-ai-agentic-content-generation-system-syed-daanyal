@@ -111,7 +111,7 @@ python -m pytest -q
 ### Expected: 10 passed
 
 ## 🔁 End-to-End Pipeline Flow
-```mermaid
+```bash
 Product JSON
       │
       ▼

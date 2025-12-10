@@ -51,7 +51,7 @@ The entire system is **fully deterministic** (same input → same output) except
 
 ---
 
-## 4. System Design (Most Important)
+## 4. System Design 
 
 The system follows a **deterministic multi-agent architecture** consisting of independent components orchestrated in a pipeline.  
 Each agent transforms its input into a predictable output, enabling testability and clear separation of responsibilities.
@@ -151,7 +151,7 @@ Templates define **order**, **field structure**, and **constraints**.
 
 ### 4.6 Diagrams
 
-#### **Pipeline Sequence Diagram (Mermaid)**
+#### **Pipeline Sequence Diagram **
 
 ```mermaid
 flowchart TD

@@ -9,10 +9,11 @@ This project implements a production-grade content generation system where each 
 
 Given one product JSON, the system produces:
 
--Output File	       Description
--product_page.json	   Structured product -page using deterministic content blocks
--faq.json	           ≥ 15 rule-based Q&A items derived solely from input facts
--comparison_page.json  Product A vs. Fictional Product B comparison (ingredients, benefits, price, verdict)
+| Output File          | Description                                                            |
+|----------------------|------------------------------------------------------------------------|
+| product_page.json    | Structured product page using deterministic content blocks             |
+| faq.json             | ≥ 15 rule-based Q&A items derived solely from input facts              |
+| comparison_page.json | Product A vs. Fictional Product B comparison (ingredients, benefits, price, verdict) |
 
 The system is deterministic (same input → same output, except timestamps), fully tested, and easy to extend.
 
@@ -39,7 +40,7 @@ Ensures reliability, repeatability, and clean IO boundaries.
 
 ## 🗂 Project Structure
 ```bash
-.
+kasparro-ai-agentic-content-generation-system-syed-daanyal
 ├─ run.py
 ├─ README.md
 ├─ requirements.txt
@@ -107,10 +108,10 @@ python run.py --input examples/product_glowboost.json --outdir out/
 ```bash
 python -m pytest -q
 ```
-# Expected: 10 passed
+### Expected: 10 passed
 
 ## 🔁 End-to-End Pipeline Flow
-
+```mermaid
 Product JSON
       │
       ▼
@@ -132,7 +133,7 @@ Product JSON
       │
       ▼
 [RendererAgent] → Write final JSON files
-
+```
 ## 🧩 Output Files Description
 ### product_page.json
 
@@ -190,10 +191,10 @@ The project includes 10 tests across:
 
 -Block generation
 
--Run all tests:
-
--python -m pytest -q
-
+## Run all tests:
+```bash
+python -m pytest -q
+```
 
 #### Expected output:
 

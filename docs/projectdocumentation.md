@@ -144,13 +144,14 @@ To satisfy requirements, the system avoids:
 ---
 
 ### 4.4 Product B Generation Logic
-Product B is created using **only** Product A’s fields:<br>
-Field	Rule<br>
-name	A.name + " (Fictional B)"<br>
-ingredients	All A.ingredients minus the last<br>
-benefits	Copy A.benefits exactly<br>
-price.amount	round(A.amount * 1.15, 2)<br>
-price.currency	Same as A<br>
+Product B is created using **only** Product A’s fields
+
+Field	Rule
+name	A.name + " (Fictional B)"
+ingredients	All A.ingredients minus the last
+benefits	Copy A.benefits exactly
+price.amount	round(A.amount * 1.15, 2)
+price.currency	Same as A
 
 The comparison output includes:
 - A-only ingredients/benefits
@@ -260,26 +261,27 @@ It ensures:
 
 ```mermaid
 flowchart TD
-    A[Input: product.json] --> B[IngestAgent<br/>load + normalize]
-    B --> C[SanityCheckAgent<br/>validate structure]
-    C --> D[FactsExtractorAgent<br/>extract atomic facts]
+    flowchart TD
+    A[Input: product.json] --> B[IngestAgent\nload + normalize]
+    B --> C[SanityCheckAgent\nvalidate structure]
+    C --> D[FactsExtractorAgent\nextract atomic facts]
 
     %% Branch 1: Product Page
-    D --> E[LLM Orchestrator<br/>generate_product_page()]
-    E --> M1[JSON Validator<br/>ProductPageSchema]
+    D --> E[LLM Orchestrator\ngenerate_product_page()]
+    E --> M1[JSON Validator\nProductPageSchema]
 
     %% Branch 2: FAQ
-    D --> F[LLM Orchestrator<br/>generate_faq()]
-    F --> F2[FAQ Sanitizer + Fallbacks<br/>ensure 15 answers]
-    F2 --> M2[JSON Validator<br/>FAQItem]
+    D --> F[LLM Orchestrator\ngenerate_faq()]
+    F --> F2[FAQ Sanitizer + Fallbacks\nensure 15 answers]
+    F2 --> M2[JSON Validator\nFAQItem]
 
     %% Branch 3: Comparison
-    D --> G[LLM Orchestrator<br/>generate_comparison()]
-    G --> G2[Price Patch Layer<br/>A_only/B_only/common strings]
-    G2 --> M3[JSON Validator<br/>ComparisonSchema]
+    D --> G[LLM Orchestrator\ngenerate_comparison()]
+    G --> G2[Price Patch Layer\nA_only/B_only/common strings]
+    G2 --> M3[JSON Validator\nComparisonSchema]
 
     %% Rendering Stage
-    M1 --> H[RendererAgent<br/>write_outputs()]
+    M1 --> H[RendererAgent\nwrite_outputs()]
     M2 --> H
     M3 --> H
 
@@ -287,6 +289,7 @@ flowchart TD
     H --> O[product_page.json]
     H --> P[faq.json]
     H --> Q[comparison_page.json]
+
 ```
 
 ## 5. Future Improvements

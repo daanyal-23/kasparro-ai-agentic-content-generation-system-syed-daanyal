@@ -11,15 +11,15 @@ The goal of this assignment is to design and implement a modular, deterministic,
 
 The system must:
 
--Use only the information explicitly provided in the input JSON
+- Use only the information explicitly provided in the input JSON
 
--Guarantee zero hallucinations
+- Guarantee zero hallucinations
 
--Produce strict JSON output conforming to fixed schemas
+- Produce strict JSON output conforming to fixed schemas
 
--Follow clean, modular AI engineering practices
+- Follow clean, modular AI engineering practices
 
--Support deterministic reproducibility (same input → same output)
+- Support deterministic reproducibility (same input → same output)
 
 The system must operate **only on provided input facts**, introduce **no external or invented information**, and follow clear software engineering principles such as modularity, deterministic behavior, maintainability, and testability.  
 All outputs must be strictly structured JSON — not prose.
@@ -31,17 +31,17 @@ The implemented solution follows a multi-agent pipeline architecture, where each
 
 The final system consists of:
 
--Deterministic ingest & validation
+- Deterministic ingest & validation
 
--Fact extraction
+- Fact extraction
 
--Structured content generation
+- Structured content generation
 
--Strict JSON templating
+- Strict JSON templating
 
--A LangChain-powered orchestrator using GPT-4o-mini for reliably structured content
+- A LangChain-powered orchestrator using GPT-4o-mini for reliably structured content
 
--A robust fallback and sanitization layer to ensure no invalid output
+- A robust fallback and sanitization layer to ensure no invalid output
 
 The entire pipeline is coordinated through a central orchestrator (langchain_orchestrator.py), ensuring:
 
@@ -125,53 +125,53 @@ Each agent adheres to **single responsibility**, enabling composability and isol
 
 ### 4.3 Deterministic Content Generation
 To satisfy requirements, the system avoids:
--randomness
--external knowledge
--free-form LLM content
--Every transformation is deterministic, rule-driven, and reversible.
+- randomness
+- external knowledge
+- free-form LLM content
+- Every transformation is deterministic, rule-driven, and reversible.
 
 #### Key Deterministic Rules
 
--Missing fields → deterministic defaults
--Product B:
-    --Remove last ingredient
-    --Increase price by exactly +15%
-    --Benefits copied as-is
-Price comparison uses:
-    --"A price: X currency"
-    --"B price: Y currency"
-    --"currency: XYZ"
+- Missing fields → deterministic defaults
+- Product B:
+- Remove last ingredient
+    - Increase price by exactly +15%
+    - Benefits copied as-is
+- Price comparison uses:
+    - "A price: X currency"
+    - "B price: Y currency"
+    - "currency: XYZ"
 ---
 
 ### 4.4 Product B Generation Logic
-Product B is created using **only** Product A’s fields:
-Field	Rule
-name	A.name + " (Fictional B)"
-ingredients	All A.ingredients minus the last
-benefits	Copy A.benefits exactly
-price.amount	round(A.amount * 1.15, 2)
-price.currency	Same as A
+Product B is created using **only** Product A’s fields:<br>
+Field	Rule<br>
+name	A.name + " (Fictional B)"<br>
+ingredients	All A.ingredients minus the last<br>
+benefits	Copy A.benefits exactly<br>
+price.amount	round(A.amount * 1.15, 2)<br>
+price.currency	Same as A<br>
 
 The comparison output includes:
--A-only ingredients/benefits
--B-only ingredients/benefits
--Common overlap
--Price details as strings
--A deterministic verdict
+- A-only ingredients/benefits
+- B-only ingredients/benefits
+- Common overlap
+- Price details as strings
+- A deterministic verdict
 ---
 
 ### 4.5 Template Engine Design
 The template engine ensures:
 
--strict JSON structure
+- strict JSON structure
 
--required titles are always filled (Summary, Usage Instructions, Safety Information)
+- required titles are always filled (Summary, Usage Instructions, Safety Information)
 
--no empty required keys
+- no empty required keys
 
--correct ordering of blocks
+- correct ordering of blocks
 
--no malformed structures
+- no malformed structures
 ---
 
 ### 4.6 LangChain Orchestrator — Pipeline Coordinator
@@ -180,128 +180,138 @@ langchain_orchestrator.py is the central execution brain of the system.
 
 It ensures:
 
-1. Agent Flow Coordination
+1. Agent Flow Coordination:
 
-Maintains the full pipeline order:
+    Maintains the full pipeline order:
 
--ingest
+        - ingest
 
--sanity check
+        - sanity check
 
--extract facts
+        - extract facts
 
--product page generation
+        - product page generation
 
--FAQ generation
+        - FAQ generation
 
--comparison generation
+        - comparison generation
 
--rendering
+        - rendering
 
 2. Structured LLM Invocation
 
-Uses:
+    Uses:
 
--ChatOpenAI (GPT-4o-mini)
+        - ChatOpenAI (GPT-4o-mini)
 
--Strict JSON-only prompts
+        - Strict JSON-only prompts
 
--Deterministic templates
+        - Deterministic templates
 
--No creative language generation
+        - No creative language generation
 
 3. JSON Enforcement + Auto-Repair
 
-The orchestrator includes:
+    The orchestrator includes:
 
--A _invoke() wrapper that:
+        - A _invoke() wrapper that:
 
--retries on invalid JSON
+        - retries on invalid JSON
 
--trims noisy output
+        - trims noisy output
 
--enforces JSON-only behavior
+        - enforces JSON-only behavior
 
--This prevents invalid or malformed outputs during evaluation.
+        - This prevents invalid or malformed outputs during evaluation.
 
 4. FAQ Sanitization Layer
 
-The orchestrator includes _sanitize_and_fill_faq() which guarantees:
+    The orchestrator includes _sanitize_and_fill_faq() which guarantees:
 
-✔ Exactly 15 FAQs
-✔ No empty answers
-✔ Answers grounded only in provided facts
-✔ Backup fallbacks for missing answers
-✔ Logging raw FAQ output into raw_faq_response.txt for debugging
+    ✔ Exactly 15 FAQs<br>
+    ✔ No empty answers<br>
+    ✔ Answers grounded only in provided facts<br>
+    ✔ Backup fallbacks for missing answers<br>
+    ✔ Logging raw FAQ output into raw_faq_response.txt for debugging<br>
 
 5. Price Comparison Patch
 
-Ensures:
+    Ensures:
 
--correct string formatting
+        - correct string formatting
 
--no numeric arrays
+        - no numeric arrays
 
--deterministic evaluation
+        - deterministic evaluation
 
 6. Rendering
 
-Orchestrator ensures:
+    Orchestrator ensures:
 
--correct filenames
+        - correct filenames
 
--valid JSON
+        - valid JSON
 
--output directory exists
+        - output directory exists
 
--This provides a fully reproducible, testable system that can run instantly.
+        - This provides a fully reproducible, testable system that can run instantly.
 
-#### **Pipeline Sequence Diagram **
+### Pipeline Sequence Diagram 
 
 ```mermaid
 flowchart TD
-    A[Product JSON] --> B[Ingest Agent]
-    B --> C[Sanity Check Agent]
-    C --> D[Facts Extractor]
+    A[Input: product.json] --> B[IngestAgent<br/>load + normalize]
+    B --> C[SanityCheckAgent<br/>validate structure]
+    C --> D[FactsExtractorAgent<br/>extract atomic facts]
 
-    D --> E[FAQ Generator]
-    D --> F[Content Block Builder]
-    D --> G[Comparison Agent]
+    %% Branch 1: Product Page
+    D --> E[LLM Orchestrator<br/>generate_product_page()]
+    E --> M1[JSON Validator<br/>ProductPageSchema]
 
-    F --> H[Template Engine]
-    E --> H
-    G --> I[Renderer]
+    %% Branch 2: FAQ
+    D --> F[LLM Orchestrator<br/>generate_faq()]
+    F --> F2[FAQ Sanitizer + Fallbacks<br/>ensure 15 answers]
+    F2 --> M2[JSON Validator<br/>FAQItem]
 
-    H --> I
+    %% Branch 3: Comparison
+    D --> G[LLM Orchestrator<br/>generate_comparison()]
+    G --> G2[Price Patch Layer<br/>A_only/B_only/common strings]
+    G2 --> M3[JSON Validator<br/>ComparisonSchema]
 
-    I --> O[product_page.json]
-    I --> P[faq.json]
-    I --> Q[comparison_page.json]
+    %% Rendering Stage
+    M1 --> H[RendererAgent<br/>write_outputs()]
+    M2 --> H
+    M3 --> H
+
+    %% Final Outputs
+    H --> O[product_page.json]
+    H --> P[faq.json]
+    H --> Q[comparison_page.json]
 ```
 
 ## 5. Future Improvements
 
--Plugin-based agent registry for more flexible extension
+- Plugin-based agent registry for more flexible extension
 
--Configurable comparison strategies (beyond ingredients/price/benefits)
+- Configurable comparison strategies (beyond ingredients/price/benefits)
 
--Support for multiple product inputs in a batch pipeline
+- Support for multiple product inputs in a batch pipeline
 
--JSON schema validation enforcement at output stage
+- JSON schema validation enforcement at output stage
 
--More advanced template rules (conditional rendering, prioritization)
+- More advanced template rules (conditional rendering, prioritization)
 
--Optional natural-language rewrite layer (still deterministic)
+- Optional natural-language rewrite layer (still deterministic)
 
 ## 6. Closing Notes
 This system prioritizes:
 
--Clarity over complexity
+- Clarity over complexity
 
--Determinism over randomness
+- Determinism over randomness
 
--Modularity over monolithic logic
+- Modularity over monolithic logic
 
--Testability over implicit behavior
+- Testability over implicit behavior
 
 The implementation is aligned with Kasparro’s focus on clarity, modularity, and robust AI system design, transcending the limitations of simple automation scripts.

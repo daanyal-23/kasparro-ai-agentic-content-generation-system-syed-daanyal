@@ -184,45 +184,45 @@ It ensures:
 
     Maintains the full pipeline order:
 
-        - ingest
+    - ingest
 
-        - sanity check
+    - sanity check
 
-        - extract facts
+    - extract facts
 
-        - product page generation
+    - product page generation
 
-        - FAQ generation
+    - FAQ generation
 
-        - comparison generation
+    - comparison generation
 
-        - rendering
+    - rendering
 
 2. Structured LLM Invocation
 
     Uses:
 
-        - ChatOpenAI (GPT-4o-mini)
+    - ChatOpenAI (GPT-4o-mini)
 
-        - Strict JSON-only prompts
+    - Strict JSON-only prompts
 
-        - Deterministic templates
+    - Deterministic templates
 
-        - No creative language generation
+    - No creative language generation
 
 3. JSON Enforcement + Auto-Repair
 
     The orchestrator includes:
 
-        - A _invoke() wrapper that:
+    - A _invoke() wrapper that:
 
-        - retries on invalid JSON
+    - retries on invalid JSON
 
-        - trims noisy output
+    - trims noisy output
 
-        - enforces JSON-only behavior
+    - enforces JSON-only behavior
 
-        - This prevents invalid or malformed outputs during evaluation.
+    - This prevents invalid or malformed outputs during evaluation.
 
 4. FAQ Sanitization Layer
 
@@ -238,23 +238,23 @@ It ensures:
 
     Ensures:
 
-        - correct string formatting
+    - correct string formatting
 
-        - no numeric arrays
+    - no numeric arrays
 
-        - deterministic evaluation
+    - deterministic evaluation
 
 6. Rendering
 
     Orchestrator ensures:
 
-        - correct filenames
+    - correct filenames
 
-        - valid JSON
+    - valid JSON
 
-        - output directory exists
+    - output directory exists
 
-        - This provides a fully reproducible, testable system that can run instantly.
+    - This provides a fully reproducible, testable system that can run instantly.
 
 ### Pipeline Sequence Diagram 
 

@@ -261,26 +261,26 @@ It ensures:
 
 ```mermaid
 flowchart TD
-    A[Input: product.json] --> B[IngestAgent | load and normalize]
-    B --> C[SanityCheckAgent | validate structure]
-    C --> D[FactsExtractorAgent | extract atomic facts]
+    A[Input product.json] --> B[IngestAgent - load and normalize]
+    B --> C[SanityCheckAgent - validate structure]
+    C --> D[FactsExtractorAgent - extract atomic facts]
 
     %% Branch 1: Product Page
-    D --> E[LLM Orchestrator | generate product page]
-    E --> M1[JSON Validator | ProductPageSchema]
+    D --> E[LLM Orchestrator - generate product page]
+    E --> M1[JSON Validator - ProductPageSchema]
 
     %% Branch 2: FAQ
-    D --> F[LLM Orchestrator | generate faq]
-    F --> F2[FAQ Sanitizer and Fallbacks | ensure 15 answers]
-    F2 --> M2[JSON Validator | FAQItem]
+    D --> F[LLM Orchestrator - generate faq]
+    F --> F2[FAQ Sanitizer and Fallbacks - ensure 15 answers]
+    F2 --> M2[JSON Validator - FAQItem]
 
     %% Branch 3: Comparison
-    D --> G[LLM Orchestrator | generate comparison]
-    G --> G2[Price Patch Layer | A only B only common]
-    G2 --> M3[JSON Validator | ComparisonSchema]
+    D --> G[LLM Orchestrator - generate comparison]
+    G --> G2[Price Patch Layer - enforce price fields]
+    G2 --> M3[JSON Validator - ComparisonSchema]
 
     %% Rendering Stage
-    M1 --> H[RendererAgent | write outputs]
+    M1 --> H[RendererAgent - write outputs]
     M2 --> H
     M3 --> H
 

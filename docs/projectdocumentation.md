@@ -261,26 +261,26 @@ It ensures:
 
 ```mermaid
 flowchart TD
-    A[Input: product.json] --> B[IngestAgent<br/>load + normalize]
-    B --> C[SanityCheckAgent<br/>validate structure]
-    C --> D[FactsExtractorAgent<br/>extract atomic facts]
+    A[Input: product.json] --> B[IngestAgent | load and normalize]
+    B --> C[SanityCheckAgent | validate structure]
+    C --> D[FactsExtractorAgent | extract atomic facts]
 
     %% Branch 1: Product Page
-    D --> E[LLM Orchestrator<br/>generate_product_page()]
-    E --> M1[JSON Validator<br/>ProductPageSchema]
+    D --> E[LLM Orchestrator | generate product page]
+    E --> M1[JSON Validator | ProductPageSchema]
 
     %% Branch 2: FAQ
-    D --> F[LLM Orchestrator<br/>generate_faq()]
-    F --> F2[FAQ Sanitizer + Fallbacks<br/>ensure 15 answers]
-    F2 --> M2[JSON Validator<br/>FAQItem]
+    D --> F[LLM Orchestrator | generate faq]
+    F --> F2[FAQ Sanitizer and Fallbacks | ensure 15 answers]
+    F2 --> M2[JSON Validator | FAQItem]
 
     %% Branch 3: Comparison
-    D --> G[LLM Orchestrator<br/>generate_comparison()]
-    G --> G2[Price Patch Layer<br/>A_only / B_only / common]
-    G2 --> M3[JSON Validator<br/>ComparisonSchema]
+    D --> G[LLM Orchestrator | generate comparison]
+    G --> G2[Price Patch Layer | A only B only common]
+    G2 --> M3[JSON Validator | ComparisonSchema]
 
     %% Rendering Stage
-    M1 --> H[RendererAgent<br/>write_outputs()]
+    M1 --> H[RendererAgent | write outputs]
     M2 --> H
     M3 --> H
 
@@ -288,7 +288,6 @@ flowchart TD
     H --> O[product_page.json]
     H --> P[faq.json]
     H --> Q[comparison_page.json]
-
 
 ```
 

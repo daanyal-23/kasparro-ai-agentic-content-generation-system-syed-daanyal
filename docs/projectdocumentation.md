@@ -1,11 +1,25 @@
 # Project Documentation — Kasparro Applied AI / Agentic Content System
 
 ## 1. Problem Statement
-The task is to design and implement a deterministic, modular, multi-agent content generation system that takes a **single product JSON** as input and produces **three structured machine-readable outputs**:
+The goal of this assignment is to design and implement a modular, deterministic, agentic content generation system that processes a single product JSON and produces three machine-readable JSON outputs:
 
-1. A product page (`product_page.json`)
-2. A FAQ page with ≥15 rule-based Q&As (`faq.json`)
-3. A comparison page between Product A and a fictional Product B (`comparison_page.json`)
+1.product_page.json — A structured, block-based product description
+
+2.faq.json — At least 15 fact-grounded, rule-based FAQs
+
+3.comparison_page.json — A deterministic comparison between Product A and a fictional Product B
+
+The system must:
+
+-Use only the information explicitly provided in the input JSON
+
+-Guarantee zero hallucinations
+
+-Produce strict JSON output conforming to fixed schemas
+
+-Follow clean, modular AI engineering practices
+
+-Support deterministic reproducibility (same input → same output)
 
 The system must operate **only on provided input facts**, introduce **no external or invented information**, and follow clear software engineering principles such as modularity, deterministic behavior, maintainability, and testability.  
 All outputs must be strictly structured JSON — not prose.
@@ -13,72 +27,81 @@ All outputs must be strictly structured JSON — not prose.
 ---
 
 ## 2. Solution Overview
-The solution is built as a **multi-agent deterministic pipeline**, where each agent performs a single responsibility. The system processes the input product through the following stages:
+The implemented solution follows a multi-agent pipeline architecture, where each agent performs a single, isolated responsibility.
 
-1. **Ingest** – Read and normalize product JSON into an internal model  
-2. **Sanity Validation** – Validate schema, fields, and expected formats  
-3. **Facts Extraction** – Convert product fields into an atomic fact-bag  
-4. **Question Generation** – Rule-based generation of ≥15 questions derived purely from facts  
-5. **Content Block Generation** – Modular reusable components such as summary, benefits, ingredients, usage, safety, price  
-6. **Template Engine** – Compose content blocks into a structured product page and FAQ page  
-7. **Comparison Engine** – Build a fictional Product B deterministically and compute structured comparisons  
-8. **Renderer** – Output final JSON files according to required format
+The final system consists of:
 
-The entire system is **fully deterministic** (same input → same output) except for timestamps, and is validated using automated unit tests and an end-to-end pipeline test.
+-Deterministic ingest & validation
+
+-Fact extraction
+
+-Structured content generation
+
+-Strict JSON templating
+
+-A LangChain-powered orchestrator using GPT-4o-mini for reliably structured content
+
+-A robust fallback and sanitization layer to ensure no invalid output
+
+The entire pipeline is coordinated through a central orchestrator (langchain_orchestrator.py), ensuring:
+
+✔ deterministic execution
+✔ strict schema compliance
+✔ retry & validation behaviour
+✔ JSON-only outputs
+✔ clean modularity
 
 ---
 
 ## 3. Scopes & Assumptions
 ### 3.1 In-Scope
-- Only one product JSON is processed per run  
-- Output must be strictly machine-readable JSON  
-- All content must derive explicitly from the input JSON  
-- Comparison must involve **one fictional Product B** generated solely from Product A  
-- System must remain modular and testable  
-- Deterministic rule-based logic (no randomness, no external calls)
+- Process exactly one product JSON per run
+- Generate three deterministic JSON outputs
+- All agents operate in an explainable, rule-based fashion
+- No part of the system may hallucinate content
+- No external lookups, no dynamic data sources
 
 ### 3.2 Out-of-Scope
-- No use of LLMs for natural language content generation  
-- No external product knowledge or API calls  
-- No UI rendering or web layer  
-- No database or persistence layer beyond simple output files  
+- Natural language rewriting or creative text generation
+- Non-json or free-form output
+- UI, interfaces, or deployment
+- Batch processing or multi-product handling  
 
 ### 3.3 Assumptions
-- Input data follows the assignment-provided structure or equivalent fields  
-- Missing optional fields default to deterministic fallback values  
-- Product B must be fictional but based strictly on Product A’s structure  
-- Ingredient and benefit comparisons preserve original casing for readability  
+- Input product follows expected key/value patterns
+- Missing optional values are replaced by  deterministic defaults
+- Product B must be fictional but strictly derived from Product A
+-The same input always yields identical outputs (excluding timestamps)
 
 ---
 
 ## 4. System Design 
 
-The system follows a **deterministic multi-agent architecture** consisting of independent components orchestrated in a pipeline.  
-Each agent transforms its input into a predictable output, enabling testability and clear separation of responsibilities.
+The system follows the Single Responsibility Principle, with each agent transforming structured input into structured output. Modular decomposition allows isolated testing and clarity of intent.
 
 ### 4.1 High-Level Architecture
 ```bash
-Product JSON
+Input Product JSON
 │
 ▼
-[Ingest Agent] → normalized ProductModel
+[Ingest Agent] → canonical normalized structure
 │
 ▼
-[Sanity Agent] → validated product + issues
+[Sanity Agent] → validations, issue detection
 │
 ▼
-[Facts Extractor] → atomic fact bag
+[Facts Extractor] → atomic fact-bag
 │
-├──────────────► [Question Generator] → FAQ data
+├──► [FAQ Generator] → 15 deterministic FAQs
 │
-├──────────────► [Content Block Agent] → summary, benefits, ingredients, usage, safety, price blocks
+├──► [Content Block Agent] → summary, benefits, ingredients, usage, safety
 │
-├──────────────► [Template Engine] → product_page.json, faq.json
+├──► [Comparison Agent] → fictional Product B + comparison
 │
-└──────────────► [Comparison Agent] → fictional product B + comparison JSON
+└──► [Template Engine] → structured product_page + faq assembly
 │
 ▼
-[Renderer] → writes structured JSON outputs
+[Renderer Agent] → writes final JSON artifacts
 ```
 ---
 
@@ -101,72 +124,154 @@ Each agent adheres to **single responsibility**, enabling composability and isol
 ---
 
 ### 4.3 Deterministic Content Generation
-All transformations are **pure, rule-based, and deterministic**:
-- No randomness  
-- No network calls  
-- No LLM-generated text  
-- No external facts  
-- Same input → identical structured output (timestamps excluded)
+To satisfy requirements, the system avoids:
+-randomness
+-external knowledge
+-free-form LLM content
+-Every transformation is deterministic, rule-driven, and reversible.
 
+#### Key Deterministic Rules
+
+-Missing fields → deterministic defaults
+-Product B:
+    --Remove last ingredient
+    --Increase price by exactly +15%
+    --Benefits copied as-is
+Price comparison uses:
+    --"A price: X currency"
+    --"B price: Y currency"
+    --"currency: XYZ"
 ---
 
 ### 4.4 Product B Generation Logic
 Product B is created using **only** Product A’s fields:
-- Name modified to indicate "Fictional B"  
-- Ingredients: deterministic subset (all except last, if applicable)  
-- Benefits: copied exactly  
-- Price: increased by +15% (rule-based, deterministic)  
+Field	Rule
+name	A.name + " (Fictional B)"
+ingredients	All A.ingredients minus the last
+benefits	Copy A.benefits exactly
+price.amount	round(A.amount * 1.15, 2)
+price.currency	Same as A
 
-Comparison then evaluates:
-- Common ingredients  
-- A-only / B-only ingredients  
-- Benefit overlap  
-- Price difference  
-- Final verdict (cheaper / equal / unavailable)
-
+The comparison output includes:
+-A-only ingredients/benefits
+-B-only ingredients/benefits
+-Common overlap
+-Price details as strings
+-A deterministic verdict
 ---
 
 ### 4.5 Template Engine Design
-The template engine composes structured blocks into final JSON pages.  
-Example conceptual flow:
-```bash
-facts
-│
-├──► summary_block
-├──► ingredients_block
-├──► benefits_block
-├──► usage_block
-├──► safety_block
-└──► price_block
-│
-▼
-template rules
-│
-▼
-product_page.json (structured, deterministic)
+The template engine ensures:
 
-Templates define **order**, **field structure**, and **constraints**.
-```
+-strict JSON structure
+
+-required titles are always filled (Summary, Usage Instructions, Safety Information)
+
+-no empty required keys
+
+-correct ordering of blocks
+
+-no malformed structures
 ---
 
-### 4.6 Diagrams
+### 4.6 LangChain Orchestrator — Pipeline Coordinator
+
+langchain_orchestrator.py is the central execution brain of the system.
+
+It ensures:
+
+1. Agent Flow Coordination
+
+Maintains the full pipeline order:
+
+-ingest
+
+-sanity check
+
+-extract facts
+
+-product page generation
+
+-FAQ generation
+
+-comparison generation
+
+-rendering
+
+2. Structured LLM Invocation
+
+Uses:
+
+-ChatOpenAI (GPT-4o-mini)
+
+-Strict JSON-only prompts
+
+-Deterministic templates
+
+-No creative language generation
+
+3. JSON Enforcement + Auto-Repair
+
+The orchestrator includes:
+
+-A _invoke() wrapper that:
+
+-retries on invalid JSON
+
+-trims noisy output
+
+-enforces JSON-only behavior
+
+-This prevents invalid or malformed outputs during evaluation.
+
+4. FAQ Sanitization Layer
+
+The orchestrator includes _sanitize_and_fill_faq() which guarantees:
+
+✔ Exactly 15 FAQs
+✔ No empty answers
+✔ Answers grounded only in provided facts
+✔ Backup fallbacks for missing answers
+✔ Logging raw FAQ output into raw_faq_response.txt for debugging
+
+5. Price Comparison Patch
+
+Ensures:
+
+-correct string formatting
+
+-no numeric arrays
+
+-deterministic evaluation
+
+6. Rendering
+
+Orchestrator ensures:
+
+-correct filenames
+
+-valid JSON
+
+-output directory exists
+
+-This provides a fully reproducible, testable system that can run instantly.
 
 #### **Pipeline Sequence Diagram **
 
 ```mermaid
 flowchart TD
-    A[Input Product JSON] --> B[Ingest Agent]
+    A[Product JSON] --> B[Ingest Agent]
     B --> C[Sanity Check Agent]
-    C --> D[Facts Extractor Agent]
+    C --> D[Facts Extractor]
 
-    D --> E[Question Generator]
-    D --> F[Content Block Agent]
+    D --> E[FAQ Generator]
+    D --> F[Content Block Builder]
     D --> G[Comparison Agent]
 
     F --> H[Template Engine]
     E --> H
-
     G --> I[Renderer]
+
     H --> I
 
     I --> O[product_page.json]

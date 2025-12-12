@@ -15,163 +15,209 @@ Given one product JSON, the system produces:
 | faq.json             | ≥ 15 rule-based Q&A items derived solely from input facts              |
 | comparison_page.json | Product A vs. Fictional Product B comparison (ingredients, benefits, price, verdict) |
 
-The system is deterministic (same input → same output, except timestamps), fully tested, and easy to extend.
+The system is has the following features:
+✔ Modular agents
+✔ Deterministic behavior
+✔ No hallucinations
+✔ Strict JSON schemas
+✔ Clean orchestration using LangChain
+✔ LLM-repair and sanitization layers
+✔ Professional engineering-quality code
 
 ## 📦 Features
-### ✔ Modular multi-agent architecture
+### 1. Multi-Agent Modular Architecture
 
-Each agent handles a clear role: ingest → sanity → facts → questions → blocks → templates → comparison → rendering.
+The pipeline is divided into isolated agents:
 
-### ✔ Template-driven structured output
+Agent	Responsibility
+IngestAgent	Reads & normalizes product JSON
+SanityAgent	Validates schema and detects issues
+FactsExtractorAgent	Converts product into atomic reusable facts
+FAQ Generator (LLM)	Builds FAQs using a fixed template + sanitization
+Product Page Generator (LLM)	Generates structured product page via strict JSON template
+ComparisonAgent (LLM + deterministic rules)	Builds Fictional Product B and structured A/B comparison
+RendererAgent	Writes all final JSON artifacts
 
-Final pages are composed using reusable, testable content blocks.
+### ⚙️ Technology Stack
+Component	Description
+Python 3.10+	Core runtime
+LangChain (v1.1.3)	Orchestration + Prompt/LLM abstraction
+OpenAI GPT-4o-mini	Strict JSON generation model
+Pydantic	JSON schema validation
+dotenv	Credential management
+Chroma / utils	Simple JSON writing utilities
 
-### ✔ Deterministic & rule-based
+### 🧠 Deterministic LLM Agentic System
 
-No external calls, no hallucinations, no randomness.
+Unlike generative systems, this pipeline:
 
-### ✔ Fictional Product B generation
+-uses LLMs strictly with schema-locked prompts
 
-Product B is created using constraints from Product A only (subset of ingredients + controlled price delta).
+-enforces JSON-only output
 
-### ✔ 10 automated tests (unit + pipeline)
+-includes retry & trimming logic
 
-Ensures reliability, repeatability, and clean IO boundaries.
+-corrects LLM output via sanitization + fallback systems
+
+-applies hard validation using Pydantic
+
+-enforces zero hallucinations
+
+-FAQ Sanitizer Guarantees
+
+#### The system ensures:
+
+-always exactly 15 FAQs
+
+-no empty answers
+
+-answers grounded only in facts_json
+
+-auto-fallback for missing values
+
+-raw LLM output is logged for debugging
+
+##### Price Comparison Fix
+
+The orchestrator enforces:
+
+"A_only": ["A price: X currency"]
+"B_only": ["B price: Y currency"]
+"common": ["currency: XYZ"]
 
 ## 🗂 Project Structure
 ```bash
-kasparro-ai-agentic-content-generation-system-syed-daanyal
-├─ run.py
-├─ README.md
-├─ requirements.txt
-├─ examples/
-│   └─ product_glowboost.json
-├─ out/
-│   ├─ product_page.json
-│   ├─ faq.json
-│   └─ comparison_page.json
-├─ src/
-│   ├─ __init__.py
-│   ├─ models.py
-│   ├─ utils.py
-│   ├─ orchestrator.py
-│   └─ agents/
-│       ├─ __init__.py
-│       ├─ ingest_agent.py
-│       ├─ sanity_agent.py
-│       ├─ facts_extractor_agent.py
-│       ├─ question_generator_agent.py
-│       ├─ content_block_agent.py
-│       ├─ template_engine_agent.py
-│       ├─ comparison_agent.py
-│       └─ renderer_agent.py
-├─ tests/
-│   ├─ conftest.py
-│   ├─ test_facts.py
-│   ├─ test_questions.py
-│   ├─ test_product_page.py
-│   ├─ test_comparison.py
-│   ├─ test_pipeline.py
-│   ├─ test_blocks.py
-│   ├─ test_templates.py
-│   └─ test_run_mvp.py
-└─ docs/
-    └─ projectdocumentation.md
+kasparro-agentic-content-system/
+│
+├── run.py
+├── requirements.txt
+├── docs/
+│   └── projectdocumentation.md
+│
+└── src/
+    ├── langchain_orchestrator.py
+    ├── utils.py
+    ├── agents/
+    │   ├── ingest_agent.py
+    │   ├── sanity_agent.py
+    │   ├── facts_extractor_agent.py
+    │   ├── renderer_agent.py
+    │   ├── comparison_agent.py
+    │   ├── content_block_agent.py
+    │   ├── question_generator_agent.py    
+    │   └── template_agent.py
+    │
+    └── out/
+        ├── product_page.json
+        ├── faq.json
+        └── comparison_page.json
 ```
 
+## 📄 Input Format
+
+Your input file must be a JSON file with product details, for example:
+```bash
+{
+  "name": "GlowBoost Vitamin C Serum",
+  "ingredients": ["Vitamin C", "Hyaluronic Acid", "Glycerin"],
+  "benefits": ["Brightening", "Fades dark spots", "Hydration"],
+  "usage": "Apply 2–3 drops in the morning before sunscreen.",
+  "safety": "Mild tingling in some users; patch test recommended.",
+  "price": { "amount": 699, "currency": "INR" }
+}
+```
 ## ⚙️ Installation & Setup
-### 1️⃣ Create and activate a virtual environment
+### 1️⃣ Clone Repository
 
-Windows
+```bash
+git clone https://github.com/daanyal-23/kasparro-ai-agentic-content-generation-system-syed-daanyal
+cd kasparro-ai-agentic-content-generation-system-syed-daanyal
+```
+
+### 2️⃣ Create Virtual Environment
 ```bash
 python -m venv venv
-venv\Scripts\activate
+source venv/bin/activate   # macOS/Linux
+venv\Scripts\activate      # Windows
 ```
 
-macOS / Linux
+### 3️⃣ Install Dependencies
 ```bash
-python -m venv venv
-source venv/bin/activate
+pip install -r requirements.txt
 ```
 
-### 2️⃣ Install dependencies
+### 4️⃣ Add API Key
+
+Create a .env file:
 ```bash
-python -m pip install -r requirements.txt
+OPENAI_API_KEY=your_key
 ```
+## ▶️ Running the System
 
-### 3️⃣ Run the pipeline
+### Generate all Outputs Using LangChain Agentic Mode
 ```bash
-python run.py --input examples/product_glowboost.json --outdir out/
+python run.py --mode langchain --input examples/product.json
 ```
-
-### 4️⃣ Run the test suite
+Outputs will appear in:
 ```bash
-python -m pytest -q
+/out/product_page.json
+/out/faq.json
+/out/comparison_page.json
 ```
-### Expected: 10 passed
 
-## 🔁 End-to-End Pipeline Flow
-```bash
-Product JSON
-      │
-      ▼
-[IngestAgent] → Parse input → ProductModel
-      │
-      ▼
-[SanityCheckAgent] → Validate fields
-      │
-      ▼
-[FactsExtractorAgent] → Atomic facts bag
-      │
-      ├──► [QuestionGeneratorAgent] → FAQ generation
-      │
-      ├──► [ContentBlockAgent] → Reusable blocks
-      │
-      ├──► [TemplateEngineAgent] → Product Page
-      │
-      └──► [ComparisonAgent] → Product B + comparison
-      │
-      ▼
-[RendererAgent] → Write final JSON files
-```
-## 🧩 Output Files Description
-### product_page.json
+## Validation Rules 
+### Product Page
 
-Contains structured content blocks:
+-Must use all required blocks
 
--Summary
+-Titles cannot be empty
 
--Ingredients
+-Must reflect facts only
 
--Benefits
+### FAQ
 
--Usage
+-Exactly 15 questions
 
--Safety
+-Questions follow fixed template
 
--Price
+-Answers derived strictly from facts
 
--Metadata
+-No empty answers
 
-### faq.json
+### Comparison Page
 
--≥ 15 rule-based questions
+-Product B strictly follows deterministic transformation
 
--Each entry includes: {id, category, question, answer}
+-No missing fields
 
-### comparison_page.json
+Verdict must be one of:
 
--Product A details
+-Product A is cheaper
 
--Fictional Product B
+-Product B is cheaper
 
--Ingredient comparison
+-Both priced equally
 
--Benefit comparison
+## 🧩 Key Design Principles
+1. Modularity
 
--Price comparison
+Each agent does exactly one task.
 
--Final verdict
+2. Determinism
+
+Same input → same output.
+
+3. Traceability
+
+LLM raw outputs logged for debugging.
+
+4. Validation
+
+Pydantic schema enforcement prevents invalid JSON.
+
+5. Maintainability
+
+Clear separation of concerns, testable units, clean orchestration.
 
 ## 🧪 Testing
 
@@ -199,16 +245,6 @@ python -m pytest -q
 #### Expected output:
 
 10 passed in X.XXs
-
-## 🔒 Determinism & Constraints
-
--The system does not fetch external data.
-
--All content is derived strictly from the input JSON.
-
--The pipeline produces repeatable output (excluding timestamps).
-
--Product B is a deterministic transformation of Product A.
 
 ## 📝 Assumptions
 

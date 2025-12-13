@@ -33,21 +33,22 @@ The final system consists of:
 
 - Deterministic ingest & validation
 
-- Fact extraction
+- Fact extraction into atomic units
 
-- Structured content generation
+- Deterministic content generation using rule-based agents
 
 - Strict JSON templating
 
-- A LangChain-powered orchestrator using GPT-4o-mini for reliably structured content
+- LangGraph-based orchestration with explicit state, routing, and validation gates
 
-- A robust fallback and sanitization layer to ensure no invalid output
+- LLM fallback (GPT-4o-mini) only when deterministic agents fail schema constraints
 
-The entire pipeline is coordinated through a central orchestrator (langchain_orchestrator.py), ensuring:
+The entire pipeline is coordinated through a central orchestrator (src/graph.py), ensuring:
 
-✔ deterministic execution
+✔ explicit state transitions
+✔ validation-driven retry loops
+✔ deterministic-first execution
 ✔ strict schema compliance
-✔ retry & validation behaviour
 ✔ JSON-only outputs
 ✔ clean modularity
 
@@ -71,7 +72,7 @@ The entire pipeline is coordinated through a central orchestrator (langchain_orc
 - Input product follows expected key/value patterns
 - Missing optional values are replaced by  deterministic defaults
 - Product B must be fictional but strictly derived from Product A
--The same input always yields identical outputs (excluding timestamps)
+- The same input always yields identical outputs (excluding timestamps)
 
 ---
 
@@ -92,13 +93,14 @@ Input Product JSON
 ▼
 [Facts Extractor] → atomic fact-bag
 │
-├──► [FAQ Generator] → 15 deterministic FAQs
+├──► [Content Block Agent] → summary, ingredients, benefits, usage, safety
 │
-├──► [Content Block Agent] → summary, benefits, ingredients, usage, safety
+├──► [Question Generator Agent] → exactly 15 deterministic questions
 │
-├──► [Comparison Agent] → fictional Product B + comparison
+├──► [Comparison Agent] → fictional Product B + structured comparison
 │
-└──► [Template Engine] → structured product_page + faq assembly
+├──► [Validator Agent] → schema enforcement
+│       └── retry loop (LangGraph)
 │
 ▼
 [Renderer Agent] → writes final JSON artifacts
@@ -108,16 +110,18 @@ Input Product JSON
 ### 4.2 Agent Responsibilities (Conceptual)
 This section focuses on *responsibility definitions*, not code-level descriptions.
 
-| Agent | Core Responsibility |
-|-------|---------------------|
-| **IngestAgent** | Load and normalize input JSON into a canonical internal model |
-| **SanityCheckAgent** | Validate required fields, check types, and identify issues |
-| **FactsExtractorAgent** | Convert product into atomic fact units for reuse |
-| **QuestionGeneratorAgent** | Generate ≥15 rule-based factual questions |
-| **ContentBlockAgent** | Build modular reusable content blocks (summary, benefits, usage, etc.) |
-| **TemplateEngineAgent** | Assemble blocks into page-level structured JSON |
-| **ComparisonAgent** | Build fictional Product B and compute structured A–B differences |
-| **RendererAgent** | Write JSON outputs to disk with schema-compliant structure |
+| Agent                      | Core Responsibility                                                                |
+| -------------------------- | ---------------------------------------------------------------------------------- |
+| **IngestAgent**            | Load and normalize input JSON into a canonical internal model                      |
+| **SanityCheckAgent**       | Validate required fields, check types, and identify issues                         |
+| **FactsExtractorAgent**    | Convert product into atomic fact units                                             |
+| **QuestionGeneratorAgent** | Generate exactly 15 rule-based factual questions                                   |
+| **ContentBlockAgent**      | Build deterministic content blocks (summary, ingredients, benefits, usage, safety) |
+| **TemplateEngineAgent**    | Assemble blocks into schema-compliant JSON                                         |
+| **ComparisonAgent**        | Build fictional Product B and compute structured A–B differences                   |
+| **ValidatorAgent**         | Enforce schema validity and trigger retries                                        |
+| **RendererAgent**          | Write final JSON outputs to disk                                                   |
+
 
 Each agent adheres to **single responsibility**, enabling composability and isolation.
 
@@ -128,36 +132,31 @@ To satisfy requirements, the system avoids:
 - randomness
 - external knowledge
 - free-form LLM content
-- Every transformation is deterministic, rule-driven, and reversible.
+Every transformation is deterministic, rule-driven, and reversible.
 
 #### Key Deterministic Rules
 
 - Missing fields → deterministic defaults
-- Product B:
-- Remove last ingredient
-    - Increase price by exactly +15%
-    - Benefits copied as-is
-- Price comparison uses:
-    - "A price: X currency"
-    - "B price: Y currency"
-    - "currency: XYZ"
+- LLM usage → fallback only, never primary
+- All outputs validated against Pydantic schemas
 ---
 
 ### 4.4 Product B Generation Logic
 Product B is created using **only** Product A’s fields
 
-Field	Rule
-name	A.name + " (Fictional B)"
-ingredients	All A.ingredients minus the last
-benefits	Copy A.benefits exactly
-price.amount	round(A.amount * 1.15, 2)
-price.currency	Same as A
+| Field          | Rule                             |
+| -------------- | -------------------------------- |
+| name           | `A.name + " (Fictional B)"`      |
+| ingredients    | All A.ingredients minus the last |
+| benefits       | Copy A.benefits exactly          |
+| price.amount   | `round(A.amount * 1.15, 2)`      |
+| price.currency | Same as A                        |
+
 
 The comparison output includes:
 - A-only ingredients/benefits
 - B-only ingredients/benefits
-- Common overlap
-- Price details as strings
+- Price comparison formatted as strings
 - A deterministic verdict
 ---
 
@@ -172,140 +171,107 @@ The template engine ensures:
 
 - correct ordering of blocks
 
-- no malformed structures
+- Schema compatibility with validator
 ---
 
 ### 4.6 LangChain Orchestrator — Pipeline Coordinator
 
-langchain_orchestrator.py is the central execution brain of the system.
+The pipeline is orchestrated using LangGraph’s StateGraph, providing:
 
-It ensures:
+1. Explicit State
 
-1. Agent Flow Coordination:
+A typed PipelineState shared across agents, containing:
 
-    Maintains the full pipeline order:
+- product
 
-    - ingest
+- facts
 
-    - sanity check
+- generated artifacts
 
-    - extract facts
+- validation status
 
-    - product page generation
+- retry counters
 
-    - FAQ generation
+2. Validation & Retry Loop
 
-    - comparison generation
+- Outputs are validated by ValidatorAgent
 
-    - rendering
+- On failure, the graph loops back to regeneration
 
-2. Structured LLM Invocation
+- Retries are bounded to prevent infinite loops
 
-    Uses:
+3. Deterministic-First Strategy
 
-    - ChatOpenAI (GPT-4o-mini)
+- Deterministic agents run first
 
-    - Strict JSON-only prompts
+- LLM-based generation is used only as fallback
 
-    - Deterministic templates
+- All LLM outputs are schema-validated
 
-    - No creative language generation
+4. JSON Safety
 
-3. JSON Enforcement + Auto-Repair
+- Strict JSON-only prompts
 
-    The orchestrator includes:
+- Repair logic for malformed responses
 
-    - A _invoke() wrapper that:
+- Final schema enforcement before rendering
 
-    - retries on invalid JSON
-
-    - trims noisy output
-
-    - enforces JSON-only behavior
-
-    - This prevents invalid or malformed outputs during evaluation.
-
-4. FAQ Sanitization Layer
-
-    The orchestrator includes _sanitize_and_fill_faq() which guarantees:
-
-    ✔ Exactly 15 FAQs<br>
-    ✔ No empty answers<br>
-    ✔ Answers grounded only in provided facts<br>
-    ✔ Backup fallbacks for missing answers<br>
-    ✔ Logging raw FAQ output into raw_faq_response.txt for debugging<br>
-
-5. Price Comparison Patch
-
-    Ensures:
-
-    - correct string formatting
-
-    - no numeric arrays
-
-    - deterministic evaluation
-
-6. Rendering
-
-    Orchestrator ensures:
-
-    - correct filenames
-
-    - valid JSON
-
-    - output directory exists
-
-    - This provides a fully reproducible, testable system that can run instantly.
-
-### Pipeline Sequence Diagram 
+## 5 Pipeline Sequence Diagram 
 
 ```mermaid
 flowchart TD
-    A[Input product.json] --> B[IngestAgent - load and normalize]
-    B --> C[SanityCheckAgent - validate structure]
-    C --> D[FactsExtractorAgent - extract atomic facts]
+    A[Input product.json] --> B[IngestAgent]
+    B --> C[SanityCheckAgent]
+    C --> D[FactsExtractorAgent]
 
-    %% Branch 1: Product Page
-    D --> E[LLM Orchestrator - generate product page]
-    E --> M1[JSON Validator - ProductPageSchema]
+    D --> E[Content & FAQ Generation]
+    E --> F[ComparisonAgent]
 
-    %% Branch 2: FAQ
-    D --> F[LLM Orchestrator - generate faq]
-    F --> F2[FAQ Sanitizer and Fallbacks - ensure 15 answers]
-    F2 --> M2[JSON Validator - FAQItem]
+    F --> G[ValidatorAgent]
+    G -->|valid| H[RendererAgent]
+    G -->|invalid & retries left| E
+    G -->|invalid & retries exhausted| X[END]
 
-    %% Branch 3: Comparison
-    D --> G[LLM Orchestrator - generate comparison]
-    G --> G2[Price Patch Layer - enforce price fields]
-    G2 --> M3[JSON Validator - ComparisonSchema]
-
-    %% Rendering Stage
-    M1 --> H[RendererAgent - write outputs]
-    M2 --> H
-    M3 --> H
-
-    %% Final Outputs
     H --> O[product_page.json]
     H --> P[faq.json]
     H --> Q[comparison_page.json]
 
 ```
 
-## 5. Future Improvements
+---
 
-- Plugin-based agent registry for more flexible extension
+## 6. Testing
 
-- Configurable comparison strategies (beyond ingredients/price/benefits)
+The project includes comprehensive tests covering:
 
-- Support for multiple product inputs in a batch pipeline
+- Fact extraction
 
-- JSON schema validation enforcement at output stage
+- Question generation
 
-- More advanced template rules (conditional rendering, prioritization)
+- Content block generation
 
-- Optional natural-language rewrite layer (still deterministic)
+- Comparison logic
 
-## 6. Closing Notes
+- Template correctness
+
+- End-to-end LangGraph pipeline execution
+
+All tests pass against the LangGraph-based orchestrator.
+
+
+## 7. Future Improvements
+
+- Plugin-based agent registry
+
+- Configurable comparison strategies
+
+- Batch processing support
+
+- Stronger graph-level retry policies
+
+- Optional deterministic NLP enrichment layer
+
+## 8. Closing Notes
 This system prioritizes:
 
 - Clarity over complexity
@@ -316,4 +282,4 @@ This system prioritizes:
 
 - Testability over implicit behavior
 
-The implementation is aligned with Kasparro’s focus on clarity, modularity, and robust AI system design, transcending the limitations of simple automation scripts.
+The final implementation demonstrates a true agentic pipeline with explicit state, routing, validation, and retry logic—designed with real-world AI engineering practices in mind.

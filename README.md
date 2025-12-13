@@ -1,7 +1,7 @@
 # Kasparro Agentic Content Generation System
 
 A fully modular, deterministic, multi-agent content generation pipeline that converts a single product JSON into three machine-readable outputs: a Product Page, an FAQ Page, and a Comparison Page.
-Built for the Kasparro Applied AI / Agentic Content System Assignment with a strong focus on clean architecture, reproducibility, and real engineering design.
+Built with a strong focus on clean architecture, reproducibility, validation, and real engineering design.
 
 ## 🚀 Overview
 
@@ -38,32 +38,71 @@ Product Page Generator (LLM)	Generates structured product page via strict JSON t
 ComparisonAgent (LLM + deterministic rules)	Builds Fictional Product B and structured A/B comparison
 RendererAgent	Writes all final JSON artifacts
 
+### 🧠 Agentic Orchestration (UPDATED)
+
+The system now uses LangGraph (StateGraph) as the primary orchestration layer.
+
+What this enables:
+
+- Explicit state machine (PipelineState)
+
+- Node-level execution (sanity → facts → generation → validation → render)
+
+- Conditional routing
+
+- Validation loop with retry counter
+
+- Automatic regeneration when constraints fail
+
+- Hard stop after max retries to avoid infinite loops
+
+This replaces a simple sequential runner and satisfies agentic orchestration requirements.
+
+### 🔁 Deterministic-First with LLM Fallback (UPDATED)
+
+All generation nodes follow this pattern:
+
+- Primary path: Deterministic agent logic
+
+- Fallback path: LLM-based generation (strict JSON prompts)
+
+- Validation: Schema + content checks
+
+- Retry loop: Graph re-enters generation if validation fails
+
+This ensures:
+
+- Predictable outputs
+
+- Minimal LLM usage
+
+- Repair of malformed or incomplete results
+
+- Zero hallucinations
+
 ### ⚙️ Technology Stack
-Component	Description
-Python 3.10+	Core runtime
-LangChain (v1.1.3)	Orchestration + Prompt/LLM abstraction
-OpenAI GPT-4o-mini	Strict JSON generation model
-Pydantic	JSON schema validation
-dotenv	Credential management
-Chroma / utils	Simple JSON writing utilities
+| Component          | Description                         |
+| ------------------ | ----------------------------------- |
+| Python 3.10+       | Core runtime                        |
+| **LangGraph**      | Agentic state-machine orchestration |
+| LangChain (v1.1.3) | Prompt + LLM abstraction            |
+| OpenAI GPT-4o-mini | JSON-locked fallback generation     |
+| Pydantic           | Schema validation                   |
+| python-dotenv      | Credential management               |
+| pytest             | Test suite                          |
 
-### 🧠 Deterministic LLM Agentic System
 
-Unlike generative systems, this pipeline:
+### 🧠 Deterministic Content Guarantees
 
--uses LLMs strictly with schema-locked prompts
+- Same input → same output (timestamps excluded)
 
--enforces JSON-only output
+- No external data or API calls
 
--includes retry & trimming logic
+- No invented facts
 
--corrects LLM output via sanitization + fallback systems
+- Fictional Product B derived only from Product A
 
--applies hard validation using Pydantic
-
--enforces zero hallucinations
-
--FAQ Sanitizer Guarantees
+- Hard schema enforcement at validation stage
 
 #### The system ensures:
 
@@ -75,42 +114,98 @@ Unlike generative systems, this pipeline:
 
 -auto-fallback for missing values
 
--raw LLM output is logged for debugging
+### 📋 Validation Rules
+#### Product Page
 
-##### Price Comparison Fix
+- All required blocks present
 
-The orchestrator enforces:
+- Titles must not be empty
 
-"A_only": ["A price: X currency"]
-"B_only": ["B price: Y currency"]
-"common": ["currency: XYZ"]
+- Values must reflect facts only
+
+#### FAQ
+
+- Exactly 15 FAQs
+
+- Numeric IDs ("1" → "15")
+
+- No empty answers
+
+- Answers derived strictly from facts
+
+#### Comparison Page
+
+- Product B derived deterministically
+
+- Price comparison formatted as:
+```bash
+"A_only": ["A price: X INR"]
+"B_only": ["B price: Y INR"]
+"common": ["currency: INR"]
+```
+
+Verdict must be one of:
+
+- Product A is cheaper
+
+- Product B is cheaper
+
+- Both priced equally
+
 
 ## 🗂 Project Structure
 ```bash
-kasparro-agentic-content-system/
+kasparro-ai-agentic-content-generation-system-syed-daanyal/
 │
-├── run.py
+├── run.py                     # Entry point (LangGraph-based pipeline)
 ├── requirements.txt
+├── README.md
+├── .env
+├── .gitignore
+│
 ├── docs/
 │   └── projectdocumentation.md
 │
-└── src/
-    ├── langchain_orchestrator.py
-    ├── utils.py
-    ├── agents/
-    │   ├── ingest_agent.py
-    │   ├── sanity_agent.py
-    │   ├── facts_extractor_agent.py
-    │   ├── renderer_agent.py
-    │   ├── comparison_agent.py
-    │   ├── content_block_agent.py
-    │   ├── question_generator_agent.py    
-    │   └── template_agent.py
-    │
-    └── out/
-        ├── product_page.json
-        ├── faq.json
-        └── comparison_page.json
+├── examples/
+│   └── product_glowboost.json # Sample input
+│
+├── out/                       # Generated outputs
+│   ├── product_page.json
+│   ├── faq.json
+│   └── comparison_page.json
+│
+├── src/
+│   ├── graph.py               # LangGraph StateGraph orchestration
+│   ├── state.py               # Typed PipelineState (shared state)
+│   ├── models.py              # ProductModel + schemas
+│   ├── langchain_orchestrator.py  # LLM fallback + JSON repair
+│   ├── orchestrator.py        # Legacy sequential pipeline (kept for reference)
+│   ├── utils.py
+│   │
+│   └── agents/
+│       ├── ingest_agent.py
+│       ├── sanity_agent.py
+│       ├── facts_extractor_agent.py
+│       ├── validator_agent.py
+│       ├── renderer_agent.py
+│       ├── comparison_agent.py
+│       ├── content_block_agent.py
+│       ├── question_generator_agent.py
+│       └── template_engine_agent.py
+│
+├── tests/
+│   ├── test_pipeline.py       # Updated to use LangGraph
+│   ├── test_blocks.py
+│   ├── test_facts.py
+│   ├── test_questions.py
+│   ├── test_product_page.py
+│   ├── test_comparison.py
+│   ├── test_templates.py
+│   └── conftest.py
+│
+├── examples.zip               # Submission artifact
+└── src.zip                    # Submission artifact
+
 ```
 
 ## 📄 Input Format
@@ -154,9 +249,9 @@ OPENAI_API_KEY=your_key
 ```
 ## ▶️ Running the System
 
-### Generate all Outputs Using LangChain Agentic Mode
+### Generate all Outputs 
 ```bash
-python run.py --mode langchain --input examples/product.json
+python run.py --input examples/product.json
 ```
 Outputs will appear in:
 ```bash
@@ -164,39 +259,6 @@ Outputs will appear in:
 /out/faq.json
 /out/comparison_page.json
 ```
-
-## Validation Rules 
-### Product Page
-
--Must use all required blocks
-
--Titles cannot be empty
-
--Must reflect facts only
-
-### FAQ
-
--Exactly 15 questions
-
--Questions follow fixed template
-
--Answers derived strictly from facts
-
--No empty answers
-
-### Comparison Page
-
--Product B strictly follows deterministic transformation
-
--No missing fields
-
-Verdict must be one of:
-
--Product A is cheaper
-
--Product B is cheaper
-
--Both priced equally
 
 ## 🧩 Key Design Principles
 1. Modularity
@@ -207,11 +269,11 @@ Each agent does exactly one task.
 
 Same input → same output.
 
-3. Traceability
+3. Agentic orchestration
 
-LLM raw outputs logged for debugging.
+State + routing + retries
 
-4. Validation
+4. Validation-first
 
 Pydantic schema enforcement prevents invalid JSON.
 
@@ -221,7 +283,7 @@ Clear separation of concerns, testable units, clean orchestration.
 
 ## 🧪 Testing
 
-The project includes 10 tests across:
+The project includes tests covering:
 
 -Fact extraction
 
@@ -258,35 +320,29 @@ python -m pytest -q
 
 ## 🌱 Future Improvements
 
--Plugin-style agent registry
+- Graph-level node retries per agent
 
--Multi-product batch processing
+- Metrics & tracing per node
 
--More sophisticated template rules
+- Batch multi-product execution
 
--Configurable comparison strategies
+- Configurable comparison strategies
 
--JSON schema validation at runtime
-
--Optional natural-language enhancement layer (still deterministic)
+- Optional explainability layer
 
 ## 📤 Submission Notes for Evaluators
 
-This project was designed with production engineering practices in mind:
+This system demonstrates:
 
--Modular multi-agent pipeline
+- True agentic orchestration (LangGraph)
 
--Clear domain boundaries
+- Deterministic-first engineering
 
--Deterministic behavior
+- Robust validation & retry logic
 
--Automated tests
+- Clean separation of concerns
 
--Readable architecture
-
--No unnecessary dependencies
-
--Maintainable, extendable codebase
+- Production-quality structure
 
 ## 🙌 Final Notes
 

@@ -65,16 +65,24 @@ def compare_products(A: Dict[str, Any], B: Dict[str, Any]) -> Dict[str, Any]:
     else:
         verdict = "Price comparison unavailable"
 
+    # Get currency for price formatting
+    currency = A.get("price", {}).get("currency", "INR")
+    
+    # Format price comparison as strings (matching LLM schema)
+    price_A_only = [f"A price: {priceA} {currency}"] if priceA is not None else []
+    price_B_only = [f"B price: {priceB} {currency}"] if priceB is not None else []
+    price_common = [f"currency: {currency}"]
+    
     return {
         "product_A": {
             "name": A.get("name"),
-            "price": priceA,
+            "price": {"amount": priceA, "currency": currency} if priceA is not None else {"amount": 0, "currency": currency},
             "ingredients": ingredients_A,
             "benefits": A.get("benefits"),
         },
         "product_B": {
             "name": B.get("name"),
-            "price": priceB,
+            "price": {"amount": priceB, "currency": currency} if priceB is not None else {"amount": 0, "currency": currency},
             "ingredients": ingredients_B,
             "benefits": B.get("benefits"),
         },
@@ -87,11 +95,9 @@ def compare_products(A: Dict[str, Any], B: Dict[str, Any]) -> Dict[str, Any]:
             },
             {
                 "aspect": "price",
-                "A_price": priceA,
-                "B_price": priceB,
-                "difference": (priceB - priceA)
-                if (priceA is not None and priceB is not None)
-                else None,
+                "A_only": price_A_only,
+                "B_only": price_B_only,
+                "common": price_common,
             },
             {
                 "aspect": "benefits",

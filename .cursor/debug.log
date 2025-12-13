@@ -1,0 +1,4 @@
+{"sessionId": "debug-session", "runId": "pre-fix", "hypothesisId": "A", "location": "graph.py:47", "message": "faq_node entry", "data": {"has_facts": true, "has_outdir": true}, "timestamp": 1765630659451}
+{"sessionId": "debug-session", "runId": "pre-fix", "hypothesisId": "A", "location": "graph.py:49", "message": "faq_node after generate_faq call", "data": {"faq_count": 15}, "timestamp": 1765630673881}
+{"sessionId": "debug-session", "runId": "pre-fix", "hypothesisId": "B", "location": "graph.py:57", "message": "validate_node entry", "data": {"has_product_page": true, "has_faq": true, "has_comparison": true}, "timestamp": 1765630698866}
+{"sessionId": "debug-session", "runId": "pre-fix", "hypothesisId": "B", "location": "graph.py:60", "message": "validate_node after validate_outputs", "data": {"is_valid": true, "error": null}, "timestamp": 1765630698868}

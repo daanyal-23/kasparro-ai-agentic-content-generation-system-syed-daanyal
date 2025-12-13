@@ -29,14 +29,16 @@ The system is has the following features:
 
 The pipeline is divided into isolated agents:
 
-Agent	Responsibility
-IngestAgent	Reads & normalizes product JSON
-SanityAgent	Validates schema and detects issues
-FactsExtractorAgent	Converts product into atomic reusable facts
-FAQ Generator (LLM)	Builds FAQs using a fixed template + sanitization
-Product Page Generator (LLM)	Generates structured product page via strict JSON template
-ComparisonAgent (LLM + deterministic rules)	Builds Fictional Product B and structured A/B comparison
-RendererAgent	Writes all final JSON artifacts
+| Agent                          | Responsibility                                                                 |
+|--------------------------------|--------------------------------------------------------------------------------|
+| **IngestAgent**                | Reads and normalizes the input product JSON                                    |
+| **SanityAgent**                | Validates schema correctness and detects data issues                            |
+| **FactsExtractorAgent**        | Converts the product into atomic, reusable factual units                        |
+| **FAQ Generator (LLM)**        | Builds FAQs using a fixed template with sanitization and validation             |
+| **Product Page Generator (LLM)** | Generates a structured product page using a strict JSON template              |
+| **ComparisonAgent (LLM + Rules)** | Builds a fictional Product B and performs structured A/B comparison          |
+| **RendererAgent**              | Writes all final JSON artifacts to disk                                         |
+
 
 ### 🧠 Agentic Orchestration (UPDATED)
 
@@ -106,13 +108,13 @@ This ensures:
 
 #### The system ensures:
 
--always exactly 15 FAQs
+- always exactly 15 FAQs
 
--no empty answers
+- no empty answers
 
--answers grounded only in facts_json
+- answers grounded only in facts_json
 
--auto-fallback for missing values
+- auto-fallback for missing values
 
 ### 📋 Validation Rules
 #### Product Page
@@ -285,19 +287,19 @@ Clear separation of concerns, testable units, clean orchestration.
 
 The project includes tests covering:
 
--Fact extraction
+- Fact extraction
 
--Question generation
+- Question generation
 
--Product page rendering
+- Product page rendering
 
--Comparison logic
+- Comparison logic
 
--End-to-end pipeline
+- End-to-end pipeline
 
--Template correctness
+- Template correctness
 
--Block generation
+- Block generation
 
 ## Run all tests:
 ```bash
@@ -310,13 +312,13 @@ python -m pytest -q
 
 ## 📝 Assumptions
 
--Input follows the given product schema.
+- Input follows the given product schema.
 
--Output must be purely machine-readable JSON.
+- Output must be purely machine-readable JSON.
 
--System must remain modular (each agent = one responsibility).
+- System must remain modular (each agent = one responsibility).
 
--No hallucinations or invented facts beyond allowed fictional transformations.
+- No hallucinations or invented facts beyond allowed fictional transformations.
 
 ## 🌱 Future Improvements
 
